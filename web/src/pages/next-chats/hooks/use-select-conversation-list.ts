@@ -4,7 +4,9 @@ import {
   useFetchChatList,
   useFetchSessionList,
 } from '@/hooks/use-chat-request';
+import { useFetchFolders } from '@/hooks/use-conversation-folder';
 import { IConversation } from '@/interfaces/database/chat';
+import { IConversationFolder } from '@/interfaces/database/conversation-folder';
 import { generateConversationId } from '@/utils/chat';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router';
@@ -35,6 +37,8 @@ export const useSelectDerivedConversationList = () => {
   const { id: dialogId } = useParams();
   const prologue = useFindPrologueFromDialogList();
   const { setConversationBoth } = useChatUrlParams();
+
+  const { data: folders } = useFetchFolders(dialogId, 'chat');
 
   const addTemporaryConversation = useCallback(() => {
     const conversationId = generateConversationId();
@@ -77,8 +81,27 @@ export const useSelectDerivedConversationList = () => {
     setList([...conversationList]);
   }, [conversationList]);
 
+  // Group conversations by folder
+  const { folderGroups, unfiledConversations } = useMemo(() => {
+    // When searching, flatten the view
+    if (searchString) {
+      return { folderGroups: [], unfiledConversations: list };
+    }
+
+    const unfiledConversations = list.filter((c) => !c.folder_id);
+    const folderGroups = folders.map((folder: IConversationFolder) => ({
+      folder,
+      conversations: list.filter((c) => c.folder_id === folder.id),
+    }));
+
+    return { folderGroups, unfiledConversations };
+  }, [list, folders, searchString]);
+
   return {
     list,
+    folders,
+    folderGroups,
+    unfiledConversations,
     addTemporaryConversation,
     removeTemporaryConversation,
     loading,

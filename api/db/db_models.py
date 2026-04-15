@@ -1002,6 +1002,7 @@ class Conversation(DataBaseModel):
     message = JSONField(null=True)
     reference = JSONField(null=True, default=[])
     user_id = CharField(max_length=255, null=True, help_text="user_id", index=True)
+    folder_id = CharField(max_length=32, null=True, help_text="folder_id", index=True)
 
     class Meta:
         db_table = "conversation"
@@ -1035,9 +1036,21 @@ class API4Conversation(DataBaseModel):
     thumb_up = IntegerField(default=0, index=True)
     errors = TextField(null=True, help_text="errors")
     version_title = CharField(max_length=255, null=True, help_text="canvas version title when session created", index=False)
+    folder_id = CharField(max_length=32, null=True, help_text="folder_id", index=True)
 
     class Meta:
         db_table = "api_4_conversation"
+
+
+class ConversationFolder(DataBaseModel):
+    id = CharField(max_length=32, primary_key=True)
+    user_id = CharField(max_length=255, null=False, help_text="user_id", index=True)
+    parent_id = CharField(max_length=32, null=False, help_text="dialog_id or canvas_id", index=True)
+    source = CharField(max_length=16, null=False, help_text="chat|agent", index=True)
+    name = CharField(max_length=255, null=False, help_text="folder name", index=True)
+
+    class Meta:
+        db_table = "conversation_folder"
 
 
 class UserCanvas(DataBaseModel):
@@ -1648,6 +1661,8 @@ def migrate_db():
     alter_db_add_column(migrator, "memory", "tenant_llm_id", IntegerField(null=True, help_text="id in tenant_llm", index=True))
     alter_db_add_column(migrator, "user_canvas_version", "release", BooleanField(null=False, help_text="is released", default=False, index=True))
     alter_db_add_column(migrator, "api_4_conversation", "version_title", CharField(max_length=255, null=True, help_text="canvas version title when session created", index=False))
+    alter_db_add_column(migrator, "conversation", "folder_id", CharField(max_length=32, null=True, help_text="folder_id", index=True))
+    alter_db_add_column(migrator, "api_4_conversation", "folder_id", CharField(max_length=32, null=True, help_text="folder_id", index=True))
     logging.disable(logging.NOTSET)
     # this is after re-enabling logging to allow logging changed user emails
     migrate_add_unique_email(migrator)

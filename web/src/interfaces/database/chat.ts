@@ -98,6 +98,7 @@ export interface IConversation {
   update_date: string;
   update_time: number;
   is_new: true;
+  folder_id?: string;
 }
 
 export interface Message {

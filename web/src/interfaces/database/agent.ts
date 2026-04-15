@@ -268,6 +268,7 @@ export interface IAgentLogResponse {
   reference: IReference;
   name: string;
   version_title: string;
+  folder_id?: string;
 }
 export interface IAgentLogsResponse {
   total: number;

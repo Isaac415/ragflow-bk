@@ -640,8 +640,9 @@ def list_sessions(chat_id):
         session_id = request.args.get("id")
         name = request.args.get("name")
         user_id = request.args.get("user_id")
+        folder_id = request.args.get("folder_id")
         convs = ConversationService.get_list(
-            chat_id, page_number, items_per_page, orderby, desc, session_id, name, user_id
+            chat_id, page_number, items_per_page, orderby, desc, session_id, name, user_id, folder_id=folder_id
         )
         if items_per_page == 0:
             convs = []

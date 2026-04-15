@@ -49,7 +49,7 @@ class API4ConversationService(CommonService):
     def get_list(cls, dialog_id, tenant_id,
                  page_number, items_per_page,
                  orderby, desc, id=None, user_id=None, include_dsl=True, keywords="",
-                 from_date=None, to_date=None, exp_user_id=None
+                 from_date=None, to_date=None, exp_user_id=None, folder_id=None
                  ):
         if include_dsl:
             sessions = cls.model.select().where(cls.model.dialog_id == dialog_id)
@@ -68,6 +68,11 @@ class API4ConversationService(CommonService):
             sessions = sessions.where(cls.model.create_date <= to_date)
         if exp_user_id:
             sessions = sessions.where(cls.model.exp_user_id == exp_user_id)
+        if folder_id is not None:
+            if folder_id == "":
+                sessions = sessions.where(cls.model.folder_id.is_null())
+            else:
+                sessions = sessions.where(cls.model.folder_id == folder_id)
         if desc:
             sessions = sessions.order_by(cls.model.getter_by(orderby).desc())
         else:

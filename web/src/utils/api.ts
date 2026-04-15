@@ -228,6 +228,17 @@ export default {
   cacheMcpServerTool: `${webAPI}/mcp_server/cache_tools`,
   testMcpServer: `${webAPI}/mcp_server/test_mcp`,
 
+  // conversation folders
+  listConversationFolders: `${restAPIv1}/conversation_folders`,
+  createConversationFolder: `${restAPIv1}/conversation_folders`,
+  updateConversationFolder: (folderId: string) =>
+    `${restAPIv1}/conversation_folders/${folderId}`,
+  deleteConversationFolder: (folderId: string) =>
+    `${restAPIv1}/conversation_folders/${folderId}`,
+  moveSessionsToFolder: (folderId: string) =>
+    `${restAPIv1}/conversation_folders/${folderId}/sessions`,
+  unfileSessions: `${restAPIv1}/conversation_folders/unfile`,
+
   // next-search
   createSearch: `${restAPIv1}/searches`,
   getSearchList: `${restAPIv1}/searches`,

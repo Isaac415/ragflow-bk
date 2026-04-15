@@ -14,12 +14,19 @@ import {
 import { SharedFrom } from '@/constants/chat';
 import { useSetModalState } from '@/hooks/common-hooks';
 import {
+  ChatApiAction,
   useFetchChat,
   useGetChatSearchParams,
   useRemoveSessions,
 } from '@/hooks/use-chat-request';
 import {
+  useCreateFolder,
+  useDeleteFolder,
+  useRenameFolder,
+} from '@/hooks/use-conversation-folder';
+import {
   LucideCopyX,
+  LucideFolderPlus,
   LucideListChecks,
   LucidePanelLeftClose,
   LucidePlus,
@@ -34,6 +41,7 @@ import { useChatUrlParams } from '../hooks/use-chat-url';
 import { useHandleClickConversationCard } from '../hooks/use-click-card';
 import { useSelectDerivedConversationList } from '../hooks/use-select-conversation-list';
 import { ConversationDropdown } from './conversation-dropdown';
+import { FolderSection } from './folder-section';
 
 type SessionProps = Pick<
   ReturnType<typeof useHandleClickConversationCard>,
@@ -43,6 +51,9 @@ export function Sessions({ handleConversationCardClick }: SessionProps) {
   const { t } = useTranslation();
   const {
     list: conversationList,
+    folders,
+    folderGroups,
+    unfiledConversations,
     addTemporaryConversation,
     removeTemporaryConversation,
     handleInputChange,
@@ -53,6 +64,15 @@ export function Sessions({ handleConversationCardClick }: SessionProps) {
   const { removeSessions } = useRemoveSessions();
   const { setConversationBoth } = useChatUrlParams();
   const { conversationId } = useGetChatSearchParams();
+  const { id } = useParams();
+
+  // Folder mutations
+  const { createFolder } = useCreateFolder();
+  const { renameFolder } = useRenameFolder();
+  const { deleteFolder } = useDeleteFolder([
+    ChatApiAction.FetchSessionList,
+    id,
+  ]);
 
   // Selection mode state
   const [selectionMode, setSelectionMode] = useState(false);
@@ -142,9 +162,79 @@ export function Sessions({ handleConversationCardClick }: SessionProps) {
 
   const selectedCount = useMemo(() => selectedIds.size, [selectedIds]);
 
-  const { id } = useParams();
   const { showEmbedModal, hideEmbedModal, embedVisible, beta } =
     useShowEmbedModal();
+
+  const handleCreateFolder = useCallback(async () => {
+    if (id) {
+      await createFolder({
+        parent_id: id,
+        source: 'chat',
+        name: t('chat.newFolder'),
+      });
+    }
+  }, [id, createFolder, t]);
+
+  const handleRenameFolder = useCallback(
+    async (folderId: string, name: string) => {
+      if (id) {
+        await renameFolder({
+          folderId,
+          name,
+          parentId: id,
+          source: 'chat',
+        });
+      }
+    },
+    [id, renameFolder],
+  );
+
+  const handleDeleteFolder = useCallback(
+    async (folderId: string) => {
+      if (id) {
+        await deleteFolder({
+          folderId,
+          parentId: id,
+          source: 'chat',
+        });
+      }
+    },
+    [id, deleteFolder],
+  );
+
+  const renderConversationItem = useCallback(
+    (x: (typeof conversationList)[0]) => (
+      <li
+        key={x.id}
+        className="
+          group pr-3 flex items-center gap-1 rounded-lg
+          aria-selected:bg-bg-card has-[>button:focus-visible]:bg-bg-card
+        "
+        aria-selected={conversationId === x.id}
+      >
+        <button
+          type="button"
+          className="focus-visible:outline-none px-3 py-2 text-left flex-1 truncate"
+          onClick={() => handleConversationCardClick(x.id, x.is_new)}
+          data-testid="chat-detail-session-item"
+          data-session-id={x.id}
+        >
+          {x.name}
+        </button>
+
+        <ConversationDropdown
+          conversation={x}
+          removeTemporaryConversation={removeTemporaryConversation}
+        >
+          <MoreButton
+            data-testid="chat-detail-session-actions"
+            data-session-id={x.id}
+          ></MoreButton>
+        </ConversationDropdown>
+      </li>
+    ),
+    [conversationId, handleConversationCardClick, removeTemporaryConversation],
+  );
 
   if (!visible) {
     return (
@@ -239,15 +329,30 @@ export function Sessions({ handleConversationCardClick }: SessionProps) {
               <LucideUndo2 size={16} />
             </Button>
           ) : (
-            // New conversation
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              onClick={addTemporaryConversation}
-              data-testid="chat-detail-session-new"
-            >
-              <LucidePlus className="h-4 w-4" />
-            </Button>
+            <>
+              {/* New conversation */}
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                onClick={addTemporaryConversation}
+                data-testid="chat-detail-session-new"
+              >
+                <LucidePlus className="h-4 w-4" />
+              </Button>
+              {/* New folder */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    onClick={handleCreateFolder}
+                  >
+                    <LucideFolderPlus className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{t('chat.newFolder')}</TooltipContent>
+              </Tooltip>
+            </>
           )}
 
           {selectionMode && selectedCount > 0 ? (
@@ -323,37 +428,24 @@ export function Sessions({ handleConversationCardClick }: SessionProps) {
           </ul>
         ) : (
           <nav aria-label={t('chat.conversations')}>
-            <ul className="space-y-2">
-              {conversationList.map((x) => (
-                <li
-                  key={x.id}
-                  className="
-                      group pr-3 flex items-center gap-1 rounded-lg
-                      aria-selected:bg-bg-card has-[>button:focus-visible]:bg-bg-card
-                    "
-                  aria-selected={conversationId === x.id}
-                >
-                  <button
-                    type="button"
-                    className="focus-visible:outline-none px-3 py-2 text-left flex-1 truncate"
-                    onClick={() => handleConversationCardClick(x.id, x.is_new)}
-                    data-testid="chat-detail-session-item"
-                    data-session-id={x.id}
-                  >
-                    {x.name}
-                  </button>
+            {/* Folder sections */}
+            {folderGroups.map(({ folder, conversations }) => (
+              <FolderSection
+                key={folder.id}
+                folder={folder}
+                conversations={conversations}
+                onRenameFolder={handleRenameFolder}
+                onDeleteFolder={handleDeleteFolder}
+              >
+                <ul className="space-y-1">
+                  {conversations.map(renderConversationItem)}
+                </ul>
+              </FolderSection>
+            ))}
 
-                  <ConversationDropdown
-                    conversation={x}
-                    removeTemporaryConversation={removeTemporaryConversation}
-                  >
-                    <MoreButton
-                      data-testid="chat-detail-session-actions"
-                      data-session-id={x.id}
-                    ></MoreButton>
-                  </ConversationDropdown>
-                </li>
-              ))}
+            {/* Unfiled conversations */}
+            <ul className="space-y-2">
+              {unfiledConversations.map(renderConversationItem)}
             </ul>
           </nav>
         )}

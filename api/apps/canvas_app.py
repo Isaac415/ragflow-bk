@@ -668,11 +668,12 @@ def sessions(canvas_id):
     if exp_user_id:
         sess = API4ConversationService.get_names(canvas_id, exp_user_id)
         return get_json_result(data={"total": len(sess), "sessions": sess})
-    
+
     # dsl defaults to True in all cases except for False and false
     include_dsl = request.args.get("dsl") != "False" and request.args.get("dsl") != "false"
+    folder_id = request.args.get("folder_id")
     total, sess = API4ConversationService.get_list(canvas_id, tenant_id, page_number, items_per_page, orderby, desc,
-                                             None, user_id, include_dsl, keywords, from_date, to_date, exp_user_id=exp_user_id)
+                                             None, user_id, include_dsl, keywords, from_date, to_date, exp_user_id=exp_user_id, folder_id=folder_id)
     try:
         return get_json_result(data={"total": total, "sessions": sess})
     except Exception as e:
